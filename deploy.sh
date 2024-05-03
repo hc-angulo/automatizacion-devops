@@ -58,13 +58,24 @@ for package in "${packages[@]}"; do
 done     
 
 # --- Configuración de Base de Datos --- #
-$mysql
-MariaDB > CREATE DATABASE devopstravel;
-MariaDB > CREATE USER 'codeuser'@'localhost' IDENTIFIED BY 'codepass';
-MariaDB > GRANT ALL PRIVILEGES ON *.* TO 'codeuser'@'localhost';
-MariaDB > FLUSH PRIVILEGES;
 
-mysql < bootcamp-devops-2023/app-295devops-travel/database/devopstravel.sql
+# Definición de variables
+DB_NAME="devopstravel"
+DB_USER="codeuser"
+DB_PASS="codepass"
+
+# Comandos SQL a ejecutar
+SQL_COMMANDS=$(cat <<EOF
+CREATE DATABASE IF NOT EXISTS $DB_NAME;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON *.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+)
+
+# Ejecución de comandos SQL en MariaDB
+echo "$SQL_COMMANDS" | mysql
+
 
 # --- Configuración de Servidor Web - Apache2 --- #
 
@@ -84,7 +95,8 @@ else
     echo -e "${COLOR_AMARILLO}Clonando repositorio $REPOSITORIO${COLOR_RESET}"                                                                      
     git clone -b clase2-linux-bash $URL  
     echo -e "${COLOR_VERDE}El repositorio $REPOSITORIO ha sido clonado exitosamente${COLOR_RESET}"
-    sed -i '/$dbPassword/c\$dbPassword = "codepass";' $REPOSITORIO/app-295devops-travel/config.php
+    sed -i "s/\$dbPassword = .*/\$dbPassword = \"codepass\";/" $REPOSITORIO/app-295devops-travel/config.php
+    mysql < bootcamp-devops-2023/app-295devops-travel/database/devopstravel.sql
     mv /var/www/html/index.html /var/www/html/index.html.php                                                                                                             
     cp -r $REPOSITORIO/app-295devops-travel/* /var/www/html 
     systemctl reload apache2                                                                                                               
